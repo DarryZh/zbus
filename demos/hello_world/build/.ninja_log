@@ -1,0 +1,17 @@
+# ninja log v5
+1	18	1694683921529383073	build.ninja	712fa88433023700
+1	26	1694659502985365490	CMakeFiles/hello_world.dir/home/darry/share/zbus/zbus_iterable_sections.c.o	c1c31b9bca9486c2
+29	45	1694669971598254326	hello_world	e26c868b94df7aaf
+0	29	1694669971586253425	CMakeFiles/hello_world.dir/home/darry/share/zbus/port/posix/posix_port.c.o	f32ecb1526c00a4b
+1	36	1694659502997365311	CMakeFiles/hello_world.dir/home/darry/share/zbus/zbus.c.o	f4787f829199d431
+0	33	1694669877342717248	CMakeFiles/hello_world.dir/src/main.c.o	a6dda6849a4e540e
+0	17	1694683921529383073	build.ninja	712fa88433023700
+0	27	1694683921557382896	CMakeFiles/hello_world.dir/home/darry/share/zbus/zbus_iterable_sections.c.o	70880417cf52c3b4
+0	32	1694683921565382845	CMakeFiles/hello_world.dir/home/darry/share/zbus/port/posix/posix_port.c.o	67c178344c73596c
+0	33	1694683921565382845	CMakeFiles/hello_world.dir/src/main.c.o	5740c80e2bdd36cd
+0	38	1694683921569382820	CMakeFiles/hello_world.dir/home/darry/share/zbus/zbus.c.o	2a3c12913187b9fb
+0	16	1694683972701060025	hello_world	e26c868b94df7aaf
+1	33	1694684084482680745	CMakeFiles/hello_world.dir/src/main.c.o	5740c80e2bdd36cd
+33	50	1694684084498678863	hello_world	e26c868b94df7aaf
+0	27	1694684109311817716	CMakeFiles/hello_world.dir/home/darry/share/zbus/port/posix/posix_port.c.o	67c178344c73596c
+27	43	1694684109331815456	hello_world	e26c868b94df7aaf

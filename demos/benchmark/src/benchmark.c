@@ -152,7 +152,7 @@ ZBUS_SUBSCRIBER_DEFINE(s16, 4);
 		}                                                                                  \
 	}                                                                                          \
                                                                                                    \
-	K_THREAD_DEFINE(name##_id, CONSUMER_STACK_SIZE, name##_task, 3);
+	K_THREAD_DEFINE(name##_id, CONSUMER_STACK_SIZE, name##_task, 1);
 
 S_TASK(s1)
 #if (CONFIG_BM_ONE_TO >= 2LLU)

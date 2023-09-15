@@ -7,9 +7,15 @@
 
 #include "cmsis_os2.h"
 
+// #define K_MUTEX_USE_SEM
+
 int k_mutex_init(struct k_mutex * mutex)
 {
+#ifdef K_MUTEX_USE_SEM
     mutex->mutex = osSemaphoreNew(1, 1, NULL);
+#else 
+    mutex->mutex = osMutexNew(NULL);
+#endif
     if(mutex->mutex == NULL){
         printf("zbus create mutex fail\r\n");
         return -1;
@@ -25,8 +31,11 @@ int k_mutex_lock(struct k_mutex * mutex, uint32_t timeout)
             return -1;
         }
     }
-
+#ifdef K_MUTEX_USE_SEM
     return osSemaphoreAcquire(mutex->mutex, timeout);
+#else
+    return osMutexAcquire(mutex->mutex, timeout);
+#endif
 }
 
 int k_mutex_unlock(struct k_mutex * mutex)
@@ -36,13 +45,20 @@ int k_mutex_unlock(struct k_mutex * mutex)
             return -1;
         }
     }
-
+#ifdef K_MUTEX_USE_SEM
     return osSemaphoreRelease(mutex->mutex);
+#else
+    return osMutexRelease(mutex->mutex);
+#endif
 }
 
 void k_mutex_destory(struct k_mutex * mutex)
 {
+#ifdef K_MUTEX_USE_SEM
+
+#else 
     osMutexDelete(mutex->mutex);
+#endif
 }
 
 int k_msgq_init(struct k_msgq *msgq)
@@ -86,10 +102,10 @@ void k_msgq_destory(struct k_msgq *msgq)
 
 void k_thread_init(struct k_thread *thread)
 {
-    // osThreadAttr_t attr = {
-    //     .
-    // };
-    thread->thid = osThreadNew(thread->thread_entry, NULL, NULL);
+    osThreadAttr_t attr = {
+        .priority = thread->thread_prio,
+    };
+    thread->thid = osThreadNew(thread->thread_entry, NULL, &attr);
     if(thread->thid == NULL){
         printf("zubs create thread fail\r\n");
     }

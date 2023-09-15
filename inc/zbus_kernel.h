@@ -23,7 +23,7 @@ struct k_mutex {
 #ifdef	CONFIG_ZBUS_POSIX
 	pthread_mutex_t mutex;
 #elif defined CONFIG_ZBUS_CMSIS_RTOS2
-	osSemaphoreId_t mutex;
+	osMutexId_t mutex;
 #else 
 #error	Please choose a config (CONFIG_ZBUS_POSIX CONFIG_ZBUS_CMSIS_RTOS2) 
 #endif

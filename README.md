@@ -1,6 +1,30 @@
 # zbus pure version
 
 ## API
+ZBUS_MSG_INIT(_val, ...)
+
+ZBUS_OBSERVERS(...)
+
+ZBUS_CHAN_DEFINE(_name, _type, _validator, _user_data, _observers, _init_val) 
+
+ZBUS_SUBSCRIBER_DEFINE(_name, _queue_size)
+
+ZBUS_LISTENER_DEFINE(_name, _cb)
+
+int zbus_chan_pub(const struct zbus_channel *chan, const void *msg, uint32_t timeout);
+
+int zbus_chan_read(const struct zbus_channel *chan, void *msg, uint32_t timeout);
+
+int zbus_chan_claim(const struct zbus_channel *chan, uint32_t timeout);
+
+int zbus_chan_finish(const struct zbus_channel *chan);
+
+const void *zbus_chan_const_msg(const struct zbus_channel *chan);
+
+uint16_t zbus_chan_msg_size(const struct zbus_channel *chan);
+
+int zbus_sub_wait(const struct zbus_observer *sub, const struct zbus_channel **chan,
+		  uint32_t timeout);
 
 ## benchmark
 Xtensa  160Mhz  gcc -O0

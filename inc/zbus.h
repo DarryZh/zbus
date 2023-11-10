@@ -379,6 +379,7 @@ uint32_t _zbus_timeout_remainder(uint64_t end_ticks);
  */
 #define ZBUS_LISTENER_DEFINE(_name, _cb) ZBUS_LISTENER_DEFINE_WITH_ENABLE(_name, _cb, true)
 
+int _zbus_init(void);
 /**
  *
  * @brief Publish to a channel

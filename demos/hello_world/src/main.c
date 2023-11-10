@@ -179,10 +179,6 @@ int main(void)
 		printf("Pub an invalid value to a channel with validator successfully.\r\n");
 	}
 
-	// char destination[64]={"/"};
-    // strcat(destination, _zbus_observer_queue_bar_sub.name);
-	// mq_unlink(destination);
-
 	while(1);
 	return 0;
 }

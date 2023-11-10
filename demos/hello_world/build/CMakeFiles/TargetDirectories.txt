@@ -1,3 +1,0 @@
-/home/darry/share/zbus/demos/hello_world/build/CMakeFiles/hello_world.dir
-/home/darry/share/zbus/demos/hello_world/build/CMakeFiles/edit_cache.dir
-/home/darry/share/zbus/demos/hello_world/build/CMakeFiles/rebuild_cache.dir

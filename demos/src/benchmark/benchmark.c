@@ -2,7 +2,11 @@
  * Copyright (c) 2022 Rodrigo Peixoto <rodrigopex@gmail.com>
  * SPDX-License-Identifier: Apache-2.0
  */
+#include <stdio.h>
 #include <stdint.h>
+#include <unistd.h>
+#include <assert.h>
+#include <sys/times.h>
 #include <zbus.h>
 
 static bool print_channel_data_iterator(const struct zbus_channel *chan, void *user_data)
@@ -49,15 +53,15 @@ static bool print_observer_data_iterator(const struct zbus_observer *obs, void *
 	return true;
 }
 
-#define CONSUMER_STACK_SIZE (1024*2)
-#define PRODUCER_STACK_SIZE (1024*2)
+#define CONSUMER_STACK_SIZE (1024*4)
+#define PRODUCER_STACK_SIZE (1024*4)
 
-#define CONFIG_BM_ONE_TO	16
+#define CONFIG_BM_ONE_TO	2
 #define CONFIG_BM_ASYNC		1
 
-#define MSEC_PER_SEC		1000
+#define MSEC_PER_SEC		sysconf( _SC_CLK_TCK )
 
-#define GET_ARCH_TIME_MS()			osKernelGetTickCount()
+#define GET_ARCH_TIME_MS()			times(NULL)
 
 #define CONFIG_BM_MESSAGE_SIZE		256
 
@@ -139,17 +143,19 @@ ZBUS_SUBSCRIBER_DEFINE(s16, 4);
 	{                                                                                          \
 		const struct zbus_channel *chan;                                                   \
 		struct bm_msg *msg_received;                                                       \
-                                                                                                   \
-		while (!zbus_sub_wait(&name, &chan, K_FOREVER)) {                                  \
-			zbus_chan_claim(chan, 0);                                          \
-                                                                                                   \
-			msg_received = zbus_chan_msg(chan);                                        \
-                                                                                                   \
-			zbus_chan_finish(chan);                                                    \
-			/*zbus_chan_read(chan, &msg_received, 100);*/	\
-                                                                                                   \
-			count += CONFIG_BM_MESSAGE_SIZE;                                \
-		}                                                                                  \
+        while(1)																			\
+		{                                                                                           \
+			while (!zbus_sub_wait(&name, &chan, K_FOREVER)) {                                  \
+				zbus_chan_claim(chan, 0);                                          \
+																									\
+				msg_received = zbus_chan_msg(chan);                                        \
+				zbus_chan_finish(chan);                                                    \
+				/*zbus_chan_read(chan, &msg_received, 100);*/	\
+																									\
+				count += CONFIG_BM_MESSAGE_SIZE;                                \
+			}                                                                                  \
+			usleep(1);	\
+		}																						\
 	}                                                                                          \
                                                                                                    \
 	K_THREAD_DEFINE(name##_id, CONSUMER_STACK_SIZE, name##_task, 1);
@@ -235,8 +241,9 @@ static void producer_thread(void)
 	uint64_t start_ns = GET_ARCH_TIME_MS();
 
 	for (uint64_t internal_count = BYTES_TO_BE_SENT / CONFIG_BM_ONE_TO; internal_count > 0;
-	     internal_count -= CONFIG_BM_MESSAGE_SIZE) {
+		internal_count -= CONFIG_BM_MESSAGE_SIZE) {
 		zbus_chan_pub(&bm_channel, &msg, (200));
+		usleep(20);
 	}
 
 	uint64_t end_ns = GET_ARCH_TIME_MS();
@@ -244,28 +251,28 @@ static void producer_thread(void)
 	uint64_t duration = end_ns - start_ns;
 
 	if (duration == 0) {
-		printf("Something wrong. Duration is zero!\r\n");
+		printf("Something wrong. Duration is zero, start:%ld, end:%ld!\r\n", start_ns, end_ns);
 		assert(0);
 	}
 	uint64_t i = ((BYTES_TO_BE_SENT * MSEC_PER_SEC) / MB(1)) / duration;
 	uint64_t f = ((BYTES_TO_BE_SENT * MSEC_PER_SEC * 100) / MB(1) / duration) % 100;
 
 	printf("Bytes sent = %lld, received = %lu\r\n", BYTES_TO_BE_SENT, count);
-	printf("Average data rate: %llu.%lluMB/s\r\n", i, f);
-	printf("Duration: %lld.%09llus\r\n", duration / MSEC_PER_SEC, duration % MSEC_PER_SEC);
+	printf("Average data rate: %lu.%luMB/s\r\n", i, f);
+	printf("Duration: %ld.%09lus\r\n", duration / MSEC_PER_SEC, duration % MSEC_PER_SEC);
 
 	count = 0;
-	printf("\r\n@%llu\r\n", duration);
-	osThreadExit();
+	printf("\r\n@%lu\r\n", duration);
 }
 
 K_THREAD_DEFINE(producer_thread_id, PRODUCER_STACK_SIZE, producer_thread, 3);
 
 extern int _zbus_init(void);
 extern void k_thread_init(struct k_thread *thread);
+extern void k_msgq_destory(struct k_msgq *msgq);
 
 void zbus_benchmark(void){
-	k_thread_init(&producer_thread_id);
+	#if (CONFIG_BM_ASYNC == 1)
 	k_thread_init(&s1_id);
 	#if (CONFIG_BM_ONE_TO >= 2LLU)
 	k_thread_init(&s2_id);
@@ -290,6 +297,9 @@ void zbus_benchmark(void){
 	#endif
 	#endif
 	#endif
+	#endif
+	sleep(1);
+	k_thread_init(&producer_thread_id);
 }
 
 void zbus_dump(void){
@@ -310,6 +320,31 @@ void main(void)
 
 	zbus_dump();
 	zbus_benchmark();
-	osDelay(osWaitForever);
-	while(1);
+	sleep(2);
+#if (CONFIG_BM_ASYNC == 1)
+	k_msgq_destory(&_zbus_observer_queue_s1);
+#if (CONFIG_BM_ONE_TO >= 2LLU)
+	k_msgq_destory(&_zbus_observer_queue_s2);
+#if (CONFIG_BM_ONE_TO > 2LLU)
+	k_msgq_destory(&_zbus_observer_queue_s3);
+	k_msgq_destory(&_zbus_observer_queue_s4);
+#if (CONFIG_BM_ONE_TO > 4LLU)
+	k_msgq_destory(&_zbus_observer_queue_s5);
+	k_msgq_destory(&_zbus_observer_queue_s6);
+	k_msgq_destory(&_zbus_observer_queue_s7);
+	k_msgq_destory(&_zbus_observer_queue_s8);
+#if (CONFIG_BM_ONE_TO > 8LLU)
+	k_msgq_destory(&_zbus_observer_queue_s9);
+	k_msgq_destory(&_zbus_observer_queue_s10);
+	k_msgq_destory(&_zbus_observer_queue_s11);
+	k_msgq_destory(&_zbus_observer_queue_s12);
+	k_msgq_destory(&_zbus_observer_queue_s13);
+	k_msgq_destory(&_zbus_observer_queue_s14);
+	k_msgq_destory(&_zbus_observer_queue_s15);
+	k_msgq_destory(&_zbus_observer_queue_s16);
+#endif
+#endif
+#endif
+#endif
+#endif
 }

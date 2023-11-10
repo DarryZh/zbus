@@ -331,8 +331,8 @@ uint32_t _zbus_timeout_remainder(uint64_t end_ticks);
  * @param[in] _enable The subscriber initial enable state.
  */
 #define ZBUS_SUBSCRIBER_DEFINE_WITH_ENABLE(_name, _queue_size, _enable)                            \
-	K_MSGQ_DEFINE(_zbus_observer_queue_##_name, sizeof(const struct zbus_channel *),           \
-		      _queue_size, sizeof(const struct zbus_channel *));                           \
+	K_MSGQ_DEFINE(_zbus_observer_queue_##_name, _queue_size,           \
+		      sizeof(const struct zbus_channel *), sizeof(const struct zbus_channel *));                           \
 	STRUCT_SECTION_ITERABLE(zbus_observer, _name) = {                                          \
 		ZBUS_OBSERVER_NAME_INIT(_name) /* Name field */                                    \
 			.type = ZBUS_OBSERVER_SUBSCRIBER_TYPE,                                     \

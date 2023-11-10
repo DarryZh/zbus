@@ -4,29 +4,28 @@ cmake_minimum_required(VERSION 3.20.0)
 project(benchmark)
 
 include_directories(
-    ../../inc
-    ../../config
-    src/
+    ../../../../inc
+    ../../../../config
+    ../../../src/benchmark
 )
 
 link_directories(
     .
 )
 
-# aux_source_directory(../../ ZBUS_SRC_LIST)
 list(APPEND ZBUS_SRC_LIST
-    ../../zbus.c
-    ../../zbus_iterable_sections.c
+    ../../../../zbus.c
+    ../../../../zbus_iterable_sections.c
 )
-aux_source_directory(../../port/posix PORT_SRC_LIST)
+aux_source_directory(../../../../port/posix PORT_SRC_LIST)
 
 list(APPEND SRC_LIST
     ${ZBUS_SRC_LIST}
     ${PORT_SRC_LIST}
 )
 
-add_executable(benchmark 
-    ${CMAKE_CURRENT_LIST_DIR}/src/benchmark.c
+add_executable(benchmark
+    ../../../src/benchmark/benchmark.c
     ${SRC_LIST}
 )
 

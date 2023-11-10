@@ -4,20 +4,19 @@ cmake_minimum_required(VERSION 3.20.0)
 project(hello_world)
 
 include_directories(
-    ../../inc
-    ../../config
+    ../../../../inc
+    ../../../../config
 )
 
 link_directories(
     .
 )
 
-# aux_source_directory(../../ ZBUS_SRC_LIST)
 list(APPEND ZBUS_SRC_LIST
-    ../../zbus.c
-    ../../zbus_iterable_sections.c
+    ../../../../zbus.c
+    ../../../../zbus_iterable_sections.c
 )
-aux_source_directory(../../port/posix PORT_SRC_LIST)
+aux_source_directory(../../../../port/posix PORT_SRC_LIST)
 
 list(APPEND SRC_LIST
     ${ZBUS_SRC_LIST}
@@ -25,7 +24,7 @@ list(APPEND SRC_LIST
 )
 
 add_executable(hello_world 
-    ${CMAKE_CURRENT_LIST_DIR}/src/main.c
+    ../../../src/hello_world/main.c
     ${SRC_LIST}
 )
 

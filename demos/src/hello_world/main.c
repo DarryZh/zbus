@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <zbus_config.h>
 #include <zbus_kernel.h>
 #include <zbus.h>
@@ -71,10 +72,11 @@ static void listener_callback_example(const struct zbus_channel *chan)
 
 ZBUS_LISTENER_DEFINE(foo_lis, listener_callback_example);
 
-ZBUS_SUBSCRIBER_DEFINE(bar_sub, 48);
+ZBUS_SUBSCRIBER_DEFINE(bar_sub, 4);
 
 static void subscriber_task(void)
 {
+	printf("subscriber thread start\r\n");
 	const struct zbus_channel *chan;
 	while(1){
 		while (!zbus_sub_wait(&bar_sub, &chan, K_FOREVER)) {
@@ -82,7 +84,7 @@ static void subscriber_task(void)
 			if (&acc_data_chan == chan) {
 				zbus_chan_read(&acc_data_chan, &acc, 100);
 
-				printf("From subscriber -> Acc x=%d, y=%d, z=%d", acc.x, acc.y, acc.z);
+				printf("From subscriber -> Acc x=%d, y=%d, z=%d\r\n", acc.x, acc.y, acc.z);
 			}
 		}
 	}
@@ -136,10 +138,12 @@ static bool print_observer_data_iterator(const struct zbus_observer *obs, void *
 
 extern int _zbus_init(void);
 extern void k_thread_init(struct k_thread *thread);
+extern void k_msgq_destory(struct k_msgq *msgq);
 int main(void)
 {
 	_zbus_init();
 	k_thread_init(&subscriber_user_task);
+	usleep(10);
 
 	int err, value;
 	struct acc_msg acc1 = {.x = 1, .y = 1, .z = 1};
@@ -160,9 +164,9 @@ int main(void)
 
 	zbus_chan_pub(&acc_data_chan, &acc1, 100);
 
-	acc1.x = 2;
-	acc1.y = 2;
-	acc1.z = 2;
+	acc1.x = 3;
+	acc1.y = 3;
+	acc1.z = 3;
 	zbus_chan_pub(&acc_data_chan, &(acc1), 100);
 
 	value = 5;
@@ -179,7 +183,9 @@ int main(void)
 		printf("Pub an invalid value to a channel with validator successfully.\r\n");
 	}
 
-	while(1);
+	usleep(10000);
+	k_msgq_destory(&_zbus_observer_queue_bar_sub);
+
 	return 0;
 }
 

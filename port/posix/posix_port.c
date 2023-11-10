@@ -33,41 +33,40 @@ int k_msgq_init(struct k_msgq *msgq)
 {
     char destination[64]={"/"};
     strcat(destination, msgq->name);
-    // printf("%s    \r\n", destination);
-    msgq->mq = mq_open(destination, O_CREAT|O_EXCL, 0777, &(msgq->attr));
-    if(msgq->mq != -1){
+
+    // printf("[k_msg_init] name:%s, max msg:%ld, msg size:%ld\r\n", destination, msgq->attr.mq_maxmsg, msgq->attr.mq_msgsize);
+
+    msgq->mq = mq_open(destination, O_CREAT|O_TRUNC, 0666, &(msgq->attr));
+    if(msgq->mq > 0){
         mq_close(msgq->mq);
-        printf("mqueue creat succ qid:%d\r\n", msgq->mq);
+        // printf("mqueue creat succ qid:%d\r\n", msgq->mq);
         return 0;
     } else {
-        printf("mqueue creat fail\r\n");
+        perror("[k_msgq_init]");
         return -1;
     }
 }
 
 int k_msgq_put(struct k_msgq *msgq, const void *data, uint32_t timeout)
 {
-    if(msgq->mq == 0){
-        k_msgq_init(msgq);
+    if(msgq->mq <= 0){
+        if(k_msgq_init(msgq)){
+            return -1;
+        }
     }
 
     char destination[64]={"/"};
     strcat(destination, msgq->name);
-    // printf("%s    \r\n", destination);
-    msgq->mq = mq_open(destination, O_WRONLY, 0777, &(msgq->attr));
+    msgq->mq = mq_open(destination, O_WRONLY, 0666, &(msgq->attr));
 
-    struct timespec tv;
-    clock_gettime(CLOCK_REALTIME, &tv);
-    tv.tv_sec += 1;
+    if(msgq->mq <= 0){
+        printf("mqueue put open fail\r\n");
+        return -1;
+    }
 
-    // int ret = mq_timedsend(msgq->mq, data, sizeof(void *), 0, &tv);
-    // printf("send data : %x, size : %d\r\n", data, sizeof(void *));
-    int ret = mq_send(msgq->mq, data, sizeof(void *), 0);
-    // int ret = -1;
-    if(ret == -1){
-        printf("msgq send fail\r\n");
-    } else {
-        // printf("msgq send ret %d\r\n", ret);
+    int ret = mq_send(msgq->mq, data, msgq->attr.mq_msgsize, 0);
+    if(ret < 0){
+        printf("msgq send fail, ret = %d\r\n", ret);
     }
     mq_close(msgq->mq);
     return ret;
@@ -75,36 +74,27 @@ int k_msgq_put(struct k_msgq *msgq, const void *data, uint32_t timeout)
 
 int k_msgq_get(struct k_msgq *msgq, void *data, uint32_t timeout)
 {
-    if(msgq->mq == 0){
-        k_msgq_init(msgq);
+    if(msgq->mq <= 0){
+        if(k_msgq_init(msgq)){
+            return -1;
+        }
     }
 
     char destination[64]={"/"};
     strcat(destination, msgq->name);
-    // printf("%s    \r\n", destination);
-    msgq->mq = mq_open(destination, O_RDONLY, 0777, &(msgq->attr));
-    if(msgq->mq != -1){
-        // mq_close(msgq->mq);
-        // printf("mqueue get open succ qid:%d\r\n", msgq->mq);
-        // return 0;
-    } else {
-        // printf("mqueue get open fail\r\n");
-        // return -1;
+    msgq->mq = mq_open(destination, O_RDONLY, 0666, &(msgq->attr));
+    if(msgq->mq <= 0){
+        printf("mqueue get open fail\r\n");
+        return -1;
     }
 
-    struct timespec tv;
-    clock_gettime(CLOCK_REALTIME, &tv);
-    tv.tv_sec += 10;
     unsigned int priority = 0;
-
-    // int ret = mq_timedreceive(msgq->mq, data, sizeof(void *), NULL, &tv);
-    int ret = mq_receive(msgq->mq, data, sizeof(void *), &priority);
-    // printf("recev data : %x\r\n");
-    // int ret = -1;
-    if(ret == -1){
-        // printf("msgq receive fail\r\n");    
+    int ret = mq_receive(msgq->mq, data, msgq->attr.mq_msgsize, &priority);
+    // printf("mq recev data len: %d\r\n", ret);
+    if(ret < 0){
+        printf("msgq receive fail, ret = %d\r\n", ret);    
     } else {
-        // printf("msgq receive ret %d\r\n", ret);
+        ret = 0;
     }
     mq_close(msgq->mq);
     return ret;
@@ -112,7 +102,11 @@ int k_msgq_get(struct k_msgq *msgq, void *data, uint32_t timeout)
 
 void k_msgq_destory(struct k_msgq *msgq)
 {
-
+    if(msgq->mq > 0){
+        char destination[64]={"/"};
+        strcat(destination, msgq->name);
+        mq_unlink(destination);
+    }
 }
 
 void k_thread_init(struct k_thread *thread)

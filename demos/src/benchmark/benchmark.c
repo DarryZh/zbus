@@ -56,7 +56,7 @@ static bool print_observer_data_iterator(const struct zbus_observer *obs, void *
 #define CONSUMER_STACK_SIZE (1024*4)
 #define PRODUCER_STACK_SIZE (1024*4)
 
-#define CONFIG_BM_ONE_TO	2
+#define CONFIG_BM_ONE_TO	16
 #define CONFIG_BM_ASYNC		1
 
 #define MSEC_PER_SEC		sysconf( _SC_CLK_TCK )
@@ -109,7 +109,12 @@ ZBUS_CHAN_DEFINE(bm_channel,	/* Name */
 		 ZBUS_MSG_INIT(0)  /* Initial value {0} */
 );
 
+#ifdef CONFIG_ZBUS_POSIX
+#define BYTES_TO_BE_SENT (1024LLU * 1024LLU * 128LLU)
+#else
 #define BYTES_TO_BE_SENT (256LLU * 1024LLU)
+#endif
+
 static long count;
 
 #if (CONFIG_BM_ASYNC == 1)
@@ -154,7 +159,6 @@ ZBUS_SUBSCRIBER_DEFINE(s16, 4);
 																									\
 				count += CONFIG_BM_MESSAGE_SIZE;                                \
 			}                                                                                  \
-			usleep(1);	\
 		}																						\
 	}                                                                                          \
                                                                                                    \
@@ -243,7 +247,7 @@ static void producer_thread(void)
 	for (uint64_t internal_count = BYTES_TO_BE_SENT / CONFIG_BM_ONE_TO; internal_count > 0;
 		internal_count -= CONFIG_BM_MESSAGE_SIZE) {
 		zbus_chan_pub(&bm_channel, &msg, (200));
-		usleep(20);
+		usleep(1);
 	}
 
 	uint64_t end_ns = GET_ARCH_TIME_MS();
@@ -298,7 +302,7 @@ void zbus_benchmark(void){
 	#endif
 	#endif
 	#endif
-	sleep(1);
+	usleep(10);
 	k_thread_init(&producer_thread_id);
 }
 
@@ -320,7 +324,7 @@ void main(void)
 
 	zbus_dump();
 	zbus_benchmark();
-	sleep(2);
+	sleep(4);
 #if (CONFIG_BM_ASYNC == 1)
 	k_msgq_destory(&_zbus_observer_queue_s1);
 #if (CONFIG_BM_ONE_TO >= 2LLU)

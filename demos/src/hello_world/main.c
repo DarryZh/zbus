@@ -183,7 +183,7 @@ int main(void)
 		printf("Pub an invalid value to a channel with validator successfully.\r\n");
 	}
 
-	usleep(10000);
+	usleep(10);
 	k_msgq_destory(&_zbus_observer_queue_bar_sub);
 
 	return 0;

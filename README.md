@@ -1,8 +1,8 @@
 # zbus pure version
 
 ## demos
-demos/hello_world:  zbus基础用法
-demos/benchmark:    zbus性能和压力测试
+ - demos/hello_world:  zbus基础用法
+ - demos/benchmark:    zbus性能和压力测试
 
 ## API
 ZBUS_MSG_INIT(_val, ...)

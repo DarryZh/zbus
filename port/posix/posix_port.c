@@ -14,13 +14,8 @@
 void k_mutex_init(struct k_mutex * mutex)
 {
     if(mutex){
-        if(mutex->mutex == NULL){
-            pthread_mutex_init(&(mutex->mutex), NULL);
-            if(mutex->mutex == NULL){
-                printf("[zbus] create mutex fail\r\n");
-                return -1;
-            }
-        }
+        pthread_mutex_init(&(mutex->mutex), NULL);
+        return ;
     }
     printf("[zbus] struct k_mutex is NULL\r\n");
 }
@@ -28,11 +23,6 @@ void k_mutex_init(struct k_mutex * mutex)
 int k_mutex_lock(struct k_mutex * mutex, uint32_t timeout)
 {
     if(mutex){
-        if(mutex->mutex == NULL){
-            if(k_mutex_init(mutex) != 0){
-                return -1;
-            }
-        }
         return pthread_mutex_lock(&(mutex->mutex));
     }
     printf("[zbus] struct k_mutex is NULL\r\n");
@@ -42,11 +32,6 @@ int k_mutex_lock(struct k_mutex * mutex, uint32_t timeout)
 int k_mutex_unlock(struct k_mutex * mutex)
 {
     if(mutex){
-        if(mutex->mutex == NULL){
-            if(k_mutex_init(mutex) != 0){
-                return -1;
-            }
-        }
         return pthread_mutex_unlock(&(mutex->mutex));
     }
     printf("[zbus] struct k_mutex is NULL\r\n");
@@ -56,10 +41,7 @@ int k_mutex_unlock(struct k_mutex * mutex)
 void k_mutex_destory(struct k_mutex * mutex)
 {
     if(mutex){
-        if(mutex->mutex){
-            pthread_mutex_destroy(&(mutex->mutex));
-            mutex->mutex = NULL;
-        }
+        pthread_mutex_destroy(&(mutex->mutex));
         return ;
     }
     printf("[zbus] struct k_mutex is NULL\r\n");
@@ -67,14 +49,16 @@ void k_mutex_destory(struct k_mutex * mutex)
 
 int k_msgq_init(struct k_msgq *msgq)
 {
+    static int key = 0;
     if(msgq){
-        if(msgq->mq == NULL){
+        if(msgq->mq == 0){
             //检查消息队列是否存在
-            msgq->mq = msgget((int)msgq->name, IPC_EXCL);//(键名,权限)
+            key++;
+            msgq->mq = msgget(key, IPC_EXCL);//(键名,权限)
             if (msgq->mq < 0)
             {
                 //创建消息队列
-                msgq->mq = msgget((int)msgq->name, IPC_CREAT | 0666);
+                msgq->mq = msgget(key, IPC_CREAT | 0666);
                 if (msgq->mq < 0)
                 {
                     printf("failed to create msq | errno=%d [%s]\n", errno, strerror(errno));
@@ -92,7 +76,7 @@ int k_msgq_put(struct k_msgq *msgq, const void *data, uint32_t timeout)
 {
     int ret_value;
     if(msgq){
-        if(msgq->mq == NULL){
+        if(msgq->mq == 0){
             int ret = k_msgq_init(msgq);
             if(ret != 0){
                 return -1;
@@ -120,7 +104,7 @@ int k_msgq_get(struct k_msgq *msgq, void *data, uint32_t timeout)
 {
     int ret_value;
     if(msgq){
-        if(msgq->mq == NULL){
+        if(msgq->mq == 0){
             int ret = k_msgq_init(msgq);
             if(ret != 0){
                 return -1;
@@ -160,13 +144,14 @@ void k_msgq_destory(struct k_msgq *msgq)
 void k_thread_init(struct k_thread *thread)
 {
     if(thread){
-        if(thread->thid == NULL){
+        if(thread->thid == 0){
             if (pthread_create(&(thread->thid), NULL, thread->thread_entry, NULL) != 0) {
                 printf("pthread_create() error");
             }
             if (pthread_detach(thread->thid) != 0) {
                 printf("pthread_detach() error");
             }
+            return ;
         }
     }
     printf("[zbus] struct k_thread is NULL\r\n");
@@ -175,8 +160,8 @@ void k_thread_init(struct k_thread *thread)
 void k_thread_destory(struct k_thread *thread)
 {
     if(thread){
-        if(thread->thid){
-            osThreadTerminate(thread->thid);
+        if(thread->thid != 0){
+            pthread_cancel(thread->thid);
             thread->thid = 0;
         }
         return ;

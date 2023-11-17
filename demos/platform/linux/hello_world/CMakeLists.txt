@@ -5,7 +5,7 @@ project(hello_world)
 
 include_directories(
     ../../../../inc
-    ../../../../config
+    ..
 )
 
 link_directories(
@@ -31,4 +31,4 @@ add_executable(hello_world
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lpthread -lrt -T ${CMAKE_SOURCE_DIR}/link.lds")
 set(CMAKE_CXX_FLAGS   "-std=c++11")             # c++11
 set(CMAKE_CXX_FLAGS   "-g")                     # 调试信息
-set(CMAKE_CXX_FLAGS   "-Wall")                  # 开启所有警告
+# set(CMAKE_CXX_FLAGS   "-Wall")                  # 开启所有警告

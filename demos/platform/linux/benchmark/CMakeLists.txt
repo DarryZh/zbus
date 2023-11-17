@@ -5,7 +5,7 @@ project(benchmark)
 
 include_directories(
     ../../../../inc
-    ../../../../config
+    ..
     ../../../src/benchmark
 )
 

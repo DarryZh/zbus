@@ -8,8 +8,7 @@
 ```
 $ cd demos/platform/linux/hello_world
 $ mkdir build && cd build
-$ cmake ..
-$ make
+$ cmake .. && make
 $ ./hello_world
 ```
 ## API

@@ -1,9 +1,17 @@
 # zbus pure version
 
-## demos
+## Demos
  - demos/hello_world:  zbus基础用法
  - demos/benchmark:    zbus性能和压力测试
-
+## How to build
+### linux
+```
+$ cd demos/platform/linux/hello_world
+$ mkdir build && cd build
+$ cmake ..
+$ make
+$ ./hello_world
+```
 ## API
 ZBUS_MSG_INIT(_val, ...)
 
@@ -30,7 +38,7 @@ uint16_t zbus_chan_msg_size(const struct zbus_channel *chan);
 int zbus_sub_wait(const struct zbus_observer *sub, const struct zbus_channel **chan,
 		  uint32_t timeout);
 
-## benchmark
+## Benchmark
 Xtensa  160Mhz  gcc -O0
 
 测试参数：消息的数据块大小为256字节，一条通道，16个订阅者，单/多拷贝模式

@@ -14,6 +14,7 @@
 void k_mutex_init(struct k_mutex * mutex)
 {
     if(mutex){
+        printf("[port] mutex is %p\r\n", &(mutex->mutex));
         pthread_mutex_init(&(mutex->mutex), NULL);
         return ;
     }
@@ -23,6 +24,7 @@ void k_mutex_init(struct k_mutex * mutex)
 int k_mutex_lock(struct k_mutex * mutex, uint32_t timeout)
 {
     if(mutex){
+        // printf("[port] mutex lock %p\r\n", &(mutex->mutex));
         return pthread_mutex_lock(&(mutex->mutex));
     }
     printf("[zbus] struct k_mutex is NULL\r\n");
@@ -32,6 +34,7 @@ int k_mutex_lock(struct k_mutex * mutex, uint32_t timeout)
 int k_mutex_unlock(struct k_mutex * mutex)
 {
     if(mutex){
+        // printf("[port] mutex unlock %p\r\n", &(mutex->mutex));
         return pthread_mutex_unlock(&(mutex->mutex));
     }
     printf("[zbus] struct k_mutex is NULL\r\n");
@@ -76,20 +79,13 @@ int k_msgq_put(struct k_msgq *msgq, const void *data, uint32_t timeout)
 {
     int ret_value;
     if(msgq){
-        if(msgq->mq == 0){
-            int ret = k_msgq_init(msgq);
-            if(ret != 0){
-                return -1;
-            }
-        }
         if(msgq->mq <= 0){
-            if(k_msgq_init(msgq)){
-                return -1;
-            }
+            printf("[port] msgq is not init\r\n");
+            return -1;
         }
 
         //发送消息队列(sizeof消息的长度，而不是整个结构体的长度)
-        ret_value = msgsnd(msgq->mq, data, msgq->attr.mq_msgsize, IPC_NOWAIT);
+        ret_value = msgsnd(msgq->mq, data, msgq->attr.mq_msgsize, 0);
         if (ret_value < 0)
         {
             printf("msgsnd() write msg failed,errno=%d[%s]\n", errno, strerror(errno));
@@ -104,20 +100,13 @@ int k_msgq_get(struct k_msgq *msgq, void *data, uint32_t timeout)
 {
     int ret_value;
     if(msgq){
-        if(msgq->mq == 0){
-            int ret = k_msgq_init(msgq);
-            if(ret != 0){
-                return -1;
-            }
-        }
         if(msgq->mq <= 0){
-            if(k_msgq_init(msgq)){
-                return -1;
-            }
+            // printf("[port] msgq is not init\r\n");
+            return -1;
         }
 
         //发送消息队列(sizeof消息的长度，而不是整个结构体的长度)
-        ret_value = msgrcv(msgq->mq, data, msgq->attr.mq_msgsize, 0, IPC_NOWAIT);
+        ret_value = msgrcv(msgq->mq, data, msgq->attr.mq_msgsize, 0, 0);
         if (ret_value > 0)
         {
             return 0;

@@ -37,7 +37,7 @@ ZBUS_CHAN_DEFINE(acc_data_chan,  /* Name */
 
 		 NULL,                                 /* Validator */
 		 NULL,                                 /* User data */
-		 ZBUS_OBSERVERS(foo_lis, bar_sub),     /* observers */
+		 ZBUS_OBSERVERS(foo_lis, bar_sub, bar_msg_sub),     /* observers */
 		 ZBUS_MSG_INIT(.x = 0, .y = 0, .z = 0) /* Initial value */
 );
 
@@ -72,11 +72,11 @@ static void listener_callback_example(const struct zbus_channel *chan)
 
 ZBUS_LISTENER_DEFINE(foo_lis, listener_callback_example);
 
-ZBUS_SUBSCRIBER_DEFINE(bar_sub, 4);
+ZBUS_SUBSCRIBER_DEFINE(bar_sub, 48);
+ZBUS_MSG_SUBSCRIBER_DEFINE(bar_msg_sub, 48);
 
 static void subscriber_task(void)
 {
-	printf("subscriber thread start\r\n");
 	const struct zbus_channel *chan;
 	while(1){
 		while (!zbus_sub_wait(&bar_sub, &chan, K_FOREVER)) {
@@ -87,9 +87,34 @@ static void subscriber_task(void)
 				printf("From subscriber -> Acc x=%d, y=%d, z=%d\r\n", acc.x, acc.y, acc.z);
 			}
 		}
+		usleep(10);
 	}
 }
-K_THREAD_DEFINE(subscriber_user_task, 2048, subscriber_task, 3);
+K_THREAD_DEFINE(subscriber_user_task, 2*1024, subscriber_task, 3);
+
+static void msg_subscriber_task(void)
+{
+	const struct zbus_channel *chan;
+
+	uint8_t buf[255] = {0};
+
+	const struct zbus_observer *subscriber = &bar_msg_sub;
+
+	while(1){
+		while (!zbus_sub_wait_msg(subscriber, &chan, buf, K_FOREVER)) {
+			if (&acc_data_chan != chan) {
+				printf("Wrong channel %p!\r\n", chan);
+
+				continue;
+			}
+			struct acc_msg *acc = (struct acc_msg *)buf;
+			printf("From msg subscriber %s -> Acc x=%d, y=%d, z=%d\r\n", zbus_obs_name(subscriber),
+				acc->x, acc->y, acc->z);
+		}
+		usleep(10);
+	}
+}
+K_THREAD_DEFINE(msg_sub_user_task, 2*1024, msg_subscriber_task, 3);
 
 static bool print_channel_data_iterator(const struct zbus_channel *chan, void *user_data)
 {
@@ -143,6 +168,7 @@ int main(void)
 {
 	_zbus_init();
 	k_thread_init(&subscriber_user_task);
+	k_thread_init(&msg_sub_user_task);
 	usleep(10);
 
 	int err, value;
@@ -183,9 +209,9 @@ int main(void)
 		printf("Pub an invalid value to a channel with validator successfully.\r\n");
 	}
 
-	usleep(10);
+	sleep(1);
 	k_msgq_destory(&_zbus_observer_queue_bar_sub);
-
+	k_msgq_destory(&_zbus_observer_msg_queue_bar_msg_sub);
 	return 0;
 }
 

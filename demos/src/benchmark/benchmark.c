@@ -87,20 +87,23 @@ ZBUS_CHAN_DEFINE(bm_channel,	/* Name */
 
 		 NULL, /* Validator */
 		 NULL, /* User data */
-		 ZBUS_OBSERVERS(s1
+		 ZBUS_OBSERVERS(s1, ms1
 
 #if (CONFIG_BM_ONE_TO >= 2LLU)
 				,
-				s2
+				s2, ms2
 #if (CONFIG_BM_ONE_TO > 2LLU)
 				,
-				s3, s4
+				s3, s4, 
+				ms3, ms4
 #if (CONFIG_BM_ONE_TO > 4LLU)
 				,
-				s5, s6, s7, s8
+				s5, s6, s7, s8, 
+				ms5, ms6, ms7, ms8
 #if (CONFIG_BM_ONE_TO > 8LLU)
 				,
-				s9, s10, s11, s12, s13, s14, s15, s16
+				s9, s10, s11, s12, s13, s14, s15, s16,
+				ms9, ms10, ms11, ms12, ms13, ms14, ms15, ms16
 #endif
 #endif
 #endif
@@ -110,7 +113,7 @@ ZBUS_CHAN_DEFINE(bm_channel,	/* Name */
 );
 
 #ifdef CONFIG_ZBUS_POSIX
-#define BYTES_TO_BE_SENT (1024LLU * 1024LLU * 128LLU)
+#define BYTES_TO_BE_SENT (8LLU * 1024LLU * 1024LLU)
 #else
 #define BYTES_TO_BE_SENT (256LLU * 1024LLU)
 #endif
@@ -118,26 +121,42 @@ ZBUS_CHAN_DEFINE(bm_channel,	/* Name */
 static long count;
 
 #if (CONFIG_BM_ASYNC == 1)
-ZBUS_SUBSCRIBER_DEFINE(s1, 4);
+ZBUS_SUBSCRIBER_DEFINE(s1, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms1, 128);
 #if (CONFIG_BM_ONE_TO >= 2LLU)
-ZBUS_SUBSCRIBER_DEFINE(s2, 4);
+ZBUS_SUBSCRIBER_DEFINE(s2, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms2, 128);
 #if (CONFIG_BM_ONE_TO > 2LLU)
-ZBUS_SUBSCRIBER_DEFINE(s3, 4);
-ZBUS_SUBSCRIBER_DEFINE(s4, 4);
+ZBUS_SUBSCRIBER_DEFINE(s3, 128);
+ZBUS_SUBSCRIBER_DEFINE(s4, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms3, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms4, 128);
 #if (CONFIG_BM_ONE_TO > 4LLU)
-ZBUS_SUBSCRIBER_DEFINE(s5, 4);
-ZBUS_SUBSCRIBER_DEFINE(s6, 4);
-ZBUS_SUBSCRIBER_DEFINE(s7, 4);
-ZBUS_SUBSCRIBER_DEFINE(s8, 4);
+ZBUS_SUBSCRIBER_DEFINE(s5, 128);
+ZBUS_SUBSCRIBER_DEFINE(s6, 128);
+ZBUS_SUBSCRIBER_DEFINE(s7, 128);
+ZBUS_SUBSCRIBER_DEFINE(s8, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms5, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms6, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms7, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms8, 128);
 #if (CONFIG_BM_ONE_TO > 8LLU)
-ZBUS_SUBSCRIBER_DEFINE(s9, 4);
-ZBUS_SUBSCRIBER_DEFINE(s10, 4);
-ZBUS_SUBSCRIBER_DEFINE(s11, 4);
-ZBUS_SUBSCRIBER_DEFINE(s12, 4);
-ZBUS_SUBSCRIBER_DEFINE(s13, 4);
-ZBUS_SUBSCRIBER_DEFINE(s14, 4);
-ZBUS_SUBSCRIBER_DEFINE(s15, 4);
-ZBUS_SUBSCRIBER_DEFINE(s16, 4);
+ZBUS_SUBSCRIBER_DEFINE(s9, 128);
+ZBUS_SUBSCRIBER_DEFINE(s10, 128);
+ZBUS_SUBSCRIBER_DEFINE(s11, 128);
+ZBUS_SUBSCRIBER_DEFINE(s12, 128);
+ZBUS_SUBSCRIBER_DEFINE(s13, 128);
+ZBUS_SUBSCRIBER_DEFINE(s14, 128);
+ZBUS_SUBSCRIBER_DEFINE(s15, 128);
+ZBUS_SUBSCRIBER_DEFINE(s16, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms9, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms10, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms11, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms12, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms13, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms14, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms15, 128);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms16, 128);
 #endif
 #endif
 #endif
@@ -164,17 +183,44 @@ ZBUS_SUBSCRIBER_DEFINE(s16, 4);
                                                                                                    \
 	K_THREAD_DEFINE(name##_id, CONSUMER_STACK_SIZE, name##_task, 1);
 
+#define MS_TASK(name)                                                                               \
+	void name##_task(void)                                                                     \
+	{                                                                                          \
+		const struct zbus_channel *chan;                                                   \
+		struct bm_msg msg_received = {0};                                                       \
+        while(1)																			\
+		{                                                                                           \
+			while (!zbus_sub_wait_msg(&name, &chan, &msg_received, K_FOREVER)) {                                  \
+				if (&bm_channel != chan) {										\
+					printf("Wrong channel %p!\r\n", chan);\
+					continue;\
+				}\
+				count += CONFIG_BM_MESSAGE_SIZE;                                \
+			}                                                                                  \
+		}																						\
+	}                                                                                          \
+                                                                                                   \
+	K_THREAD_DEFINE(name##_id, CONSUMER_STACK_SIZE, name##_task, 1);
+
 S_TASK(s1)
+MS_TASK(ms1)
 #if (CONFIG_BM_ONE_TO >= 2LLU)
 S_TASK(s2)
+MS_TASK(ms2)
 #if (CONFIG_BM_ONE_TO > 2LLU)
 S_TASK(s3)
 S_TASK(s4)
+MS_TASK(ms3)
+MS_TASK(ms4)
 #if (CONFIG_BM_ONE_TO > 4LLU)
 S_TASK(s5)
 S_TASK(s6)
 S_TASK(s7)
 S_TASK(s8)
+MS_TASK(ms5)
+MS_TASK(ms6)
+MS_TASK(ms7)
+MS_TASK(ms8)
 #if (CONFIG_BM_ONE_TO > 8LLU)
 S_TASK(s9)
 S_TASK(s10)
@@ -184,6 +230,14 @@ S_TASK(s13)
 S_TASK(s14)
 S_TASK(s15)
 S_TASK(s16)
+MS_TASK(ms9)
+MS_TASK(ms10)
+MS_TASK(ms11)
+MS_TASK(ms12)
+MS_TASK(ms13)
+MS_TASK(ms14)
+MS_TASK(ms15)
+MS_TASK(ms16)
 #endif
 #endif
 #endif
@@ -247,7 +301,6 @@ static void producer_thread(void)
 	for (uint64_t internal_count = BYTES_TO_BE_SENT / CONFIG_BM_ONE_TO; internal_count > 0;
 		internal_count -= CONFIG_BM_MESSAGE_SIZE) {
 		zbus_chan_pub(&bm_channel, &msg, (200));
-		usleep(1);
 	}
 
 	uint64_t end_ns = GET_ARCH_TIME_MS();
@@ -278,16 +331,24 @@ extern void k_msgq_destory(struct k_msgq *msgq);
 void zbus_benchmark(void){
 	#if (CONFIG_BM_ASYNC == 1)
 	k_thread_init(&s1_id);
+	k_thread_init(&ms1_id);
 	#if (CONFIG_BM_ONE_TO >= 2LLU)
 	k_thread_init(&s2_id);
+	k_thread_init(&ms2_id);
 	#if (CONFIG_BM_ONE_TO > 2LLU)
 	k_thread_init(&s3_id);
 	k_thread_init(&s4_id);
+	k_thread_init(&ms3_id);
+	k_thread_init(&ms4_id);
 	#if (CONFIG_BM_ONE_TO > 4LLU)
 	k_thread_init(&s5_id);
 	k_thread_init(&s6_id);
 	k_thread_init(&s7_id);
 	k_thread_init(&s8_id);
+	k_thread_init(&ms5_id);
+	k_thread_init(&ms6_id);
+	k_thread_init(&ms7_id);
+	k_thread_init(&ms8_id);
 	#if (CONFIG_BM_ONE_TO > 8LLU)
 	k_thread_init(&s9_id);
 	k_thread_init(&s10_id);
@@ -297,13 +358,27 @@ void zbus_benchmark(void){
 	k_thread_init(&s14_id);
 	k_thread_init(&s15_id);
 	k_thread_init(&s16_id);
+	k_thread_init(&ms9_id);
+	k_thread_init(&ms10_id);
+	k_thread_init(&ms11_id);
+	k_thread_init(&ms12_id);
+	k_thread_init(&ms13_id);
+	k_thread_init(&ms14_id);
+	k_thread_init(&ms15_id);
+	k_thread_init(&ms16_id);
 	#endif
 	#endif
 	#endif
 	#endif
 	#endif
-	usleep(10);
+	usleep(100);
+#ifdef CONFIG_ZBUS_POSIX
+	if (pthread_create(&(producer_thread_id.thid), NULL, producer_thread_id.thread_entry, NULL) != 0) {
+		printf("pthread_create() error");
+	}
+#else
 	k_thread_init(&producer_thread_id);
+#endif
 }
 
 void zbus_dump(void){
@@ -324,19 +399,29 @@ void main(void)
 
 	zbus_dump();
 	zbus_benchmark();
-	sleep(4);
+#ifdef CONFIG_ZBUS_POSIX
+	pthread_join(producer_thread_id.thid, NULL);
+#endif
 #if (CONFIG_BM_ASYNC == 1)
 	k_msgq_destory(&_zbus_observer_queue_s1);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms1);
 #if (CONFIG_BM_ONE_TO >= 2LLU)
 	k_msgq_destory(&_zbus_observer_queue_s2);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms2);
 #if (CONFIG_BM_ONE_TO > 2LLU)
 	k_msgq_destory(&_zbus_observer_queue_s3);
 	k_msgq_destory(&_zbus_observer_queue_s4);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms3);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms4);
 #if (CONFIG_BM_ONE_TO > 4LLU)
 	k_msgq_destory(&_zbus_observer_queue_s5);
 	k_msgq_destory(&_zbus_observer_queue_s6);
 	k_msgq_destory(&_zbus_observer_queue_s7);
 	k_msgq_destory(&_zbus_observer_queue_s8);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms5);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms6);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms7);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms8);
 #if (CONFIG_BM_ONE_TO > 8LLU)
 	k_msgq_destory(&_zbus_observer_queue_s9);
 	k_msgq_destory(&_zbus_observer_queue_s10);
@@ -346,6 +431,14 @@ void main(void)
 	k_msgq_destory(&_zbus_observer_queue_s14);
 	k_msgq_destory(&_zbus_observer_queue_s15);
 	k_msgq_destory(&_zbus_observer_queue_s16);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms9);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms10);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms11);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms12);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms13);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms14);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms15);
+	k_msgq_destory(&_zbus_observer_msg_queue_ms16);
 #endif
 #endif
 #endif

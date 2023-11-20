@@ -118,7 +118,7 @@ ZBUS_CHAN_DEFINE(bm_channel,	/* Name */
 );
 
 #ifdef CONFIG_ZBUS_POSIX
-#define BYTES_TO_BE_SENT (4LLU * 1024LLU * 1024LLU)
+#define BYTES_TO_BE_SENT (512LLU * 1024LLU * 1024LLU)
 #else
 #define BYTES_TO_BE_SENT (256LLU * 1024LLU)
 #endif
@@ -171,15 +171,11 @@ ZBUS_MSG_SUBSCRIBER_DEFINE(ms16, 16);
 	void name##_task(void *args)                                                                     \
 	{                                                                                          \
 		const struct zbus_channel *chan = NULL;                                                   \
-		struct bm_msg *msg_received = NULL;                                                       \
+		struct bm_msg msg_received = {0};                                                       \
         while(1)																			\
 		{                                                                                           \
 			while (!zbus_sub_wait(&name, &chan, 0)) {                                  \
-				zbus_chan_claim(chan, 0);                                          \
-																									\
-				msg_received = zbus_chan_msg(chan);                                        \
-				zbus_chan_finish(chan);                                                    \
-				/*zbus_chan_read(chan, &msg_received, 100);*/	\
+				zbus_chan_read(chan, &msg_received, 100);				\
 																									\
 				count += CONFIG_BM_MESSAGE_SIZE;                                \
 			}                                                                                  \

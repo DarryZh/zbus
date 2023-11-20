@@ -71,14 +71,12 @@ static inline void msg_buf_ref(void *buf)
 {
 	uint16_t *refcnt = (uint16_t *)buf;
 	(*refcnt)++;
-	// printf("[zbus] ref is %d\r\n", *refcnt);
 }
 static inline void msg_buf_unref(void *buf)
 {
 	uint16_t *refcnt = (uint16_t *)buf;
 	if((*refcnt) > 0){
 		(*refcnt)--;
-		// printf("[zbus] ref is %d\r\n", *refcnt);
 		if((*refcnt) == 0){
 			// printf("[zbus] msg buf free %p\r\n", buf);
 			if(buf){
@@ -92,18 +90,34 @@ static inline void msg_buf_unref(void *buf)
 }
 static inline void *msg_buf_get_chan(void *buf, void *chan)
 {
+	if(buf == NULL || chan == NULL){
+		printf("[zbus] msg_buf_get_chan buf is %p, chan is %p\r\n", buf, chan);
+		return NULL;
+	}
 	return memcpy(((uint8_t *)chan), ((uint8_t *)buf)+MSG_SUB_REF_CNT_BYTE_LEN, sizeof(chan));
 }
 static inline void *msg_buf_set_chan(void *buf, const void *chan)
 {
+	if(buf == NULL || chan == NULL){
+		printf("[zbus] msg_buf_set_chan buf is %p, chan is %p\r\n", buf, chan);
+		return NULL;
+	}
 	return memcpy(((uint8_t *)buf)+MSG_SUB_REF_CNT_BYTE_LEN, chan, sizeof(chan));
 }
 static inline void *msg_buf_get_data(void *dst, void *src, uint32_t len)
 {
+	if(dst == NULL || src == NULL){
+		printf("[zbus] msg_buf_set_chan dst is %p, src is %p\r\n", dst, src);
+		return NULL;
+	}
 	return memcpy(((uint8_t *)dst), ((uint8_t *)src)+MSG_SUB_REF_CNT_BYTE_LEN+MSG_SUB_CHAN_BYTE_LEN, len);
 }
 static inline void *msg_buf_set_data(void *dst, void *src, uint32_t len)
 {
+	if(dst == NULL || src == NULL){
+		printf("[zbus] msg_buf_set_chan dst is %p, src is %p\r\n", dst, src);
+		return NULL;
+	}
 	return memcpy(((uint8_t *)dst)+MSG_SUB_REF_CNT_BYTE_LEN+MSG_SUB_CHAN_BYTE_LEN, src, len);
 }
 static inline void *msg_buf_gen(int len)
@@ -145,8 +159,7 @@ static inline int _zbus_notify_observer(const struct zbus_channel *chan,
 		}
 		msg_buf_ref(buf);
 		k_mutex_unlock(chan->msg_buf_mutex);
-		k_msgq_put(obs->msg_queue, &buf, end_time);
-		break;
+		return k_msgq_put(obs->msg_queue, &buf, end_time);
 	}
 	default:
 		_ZBUS_ASSERT(false, "Unreachable");
@@ -175,9 +188,9 @@ static inline int _zbus_vded_exec(const struct zbus_channel *chan, uint32_t end_
 		return err;
 	}
 	msg_buf_ref(buf);
-	k_mutex_unlock(chan->msg_buf_mutex);
 	msg_buf_set_chan(buf, &chan);
 	msg_buf_set_data(buf, zbus_chan_msg(chan), zbus_chan_msg_size(chan));
+	k_mutex_unlock(chan->msg_buf_mutex);
 
 	for (int16_t i = chan->data->observers_start_idx, limit = chan->data->observers_end_idx;
 	     i < limit; ++i) {
@@ -360,14 +373,13 @@ int zbus_sub_wait_msg(const struct zbus_observer *sub, const struct zbus_channel
 	}
 
 	msg_buf_get_chan(buf, chan);
-	// printf("[zbus] zbus_sub_wait_msg size is %d\r\n", zbus_chan_msg_size(*chan));
-	msg_buf_get_data(msg, buf, zbus_chan_msg_size(*chan));
 
 	err = k_mutex_lock((*chan)->msg_buf_mutex, K_FOREVER);
 	if (err) {
 		printf("[zbus] msg buf mutex lock fail\r\n");
 		return err;
 	}
+	msg_buf_get_data(msg, buf, zbus_chan_msg_size(*chan));
 	msg_buf_unref(buf);
 	k_mutex_unlock((*chan)->msg_buf_mutex);
 

@@ -169,7 +169,6 @@ int main(void)
 	_zbus_init();
 	k_thread_init(&subscriber_user_task);
 	k_thread_init(&msg_sub_user_task);
-	usleep(10);
 
 	int err, value;
 	struct acc_msg acc1 = {.x = 1, .y = 1, .z = 1};
@@ -209,7 +208,7 @@ int main(void)
 		printf("Pub an invalid value to a channel with validator successfully.\r\n");
 	}
 
-	sleep(1);
+	usleep(1000);
 	k_msgq_destory(&_zbus_observer_queue_bar_sub);
 	k_msgq_destory(&_zbus_observer_msg_queue_bar_msg_sub);
 	return 0;

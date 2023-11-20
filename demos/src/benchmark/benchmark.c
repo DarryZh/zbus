@@ -53,8 +53,13 @@ static bool print_observer_data_iterator(const struct zbus_observer *obs, void *
 	return true;
 }
 
-#define CONSUMER_STACK_SIZE (1024*4)
-#define PRODUCER_STACK_SIZE (1024*4)
+#ifdef CONFIG_ZBUS_POSIX
+#define CONSUMER_STACK_SIZE (1024*16)
+#define PRODUCER_STACK_SIZE (1024*16)
+#else
+#define CONSUMER_STACK_SIZE (1024*2)
+#define PRODUCER_STACK_SIZE (1024*2)
+#endif
 
 #define CONFIG_BM_ONE_TO	16
 #define CONFIG_BM_ASYNC		1
@@ -113,7 +118,7 @@ ZBUS_CHAN_DEFINE(bm_channel,	/* Name */
 );
 
 #ifdef CONFIG_ZBUS_POSIX
-#define BYTES_TO_BE_SENT (8LLU * 1024LLU * 1024LLU)
+#define BYTES_TO_BE_SENT (4LLU * 1024LLU * 1024LLU)
 #else
 #define BYTES_TO_BE_SENT (256LLU * 1024LLU)
 #endif
@@ -121,55 +126,55 @@ ZBUS_CHAN_DEFINE(bm_channel,	/* Name */
 static long count;
 
 #if (CONFIG_BM_ASYNC == 1)
-ZBUS_SUBSCRIBER_DEFINE(s1, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms1, 128);
+ZBUS_SUBSCRIBER_DEFINE(s1, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms1, 16);
 #if (CONFIG_BM_ONE_TO >= 2LLU)
-ZBUS_SUBSCRIBER_DEFINE(s2, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms2, 128);
+ZBUS_SUBSCRIBER_DEFINE(s2, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms2, 16);
 #if (CONFIG_BM_ONE_TO > 2LLU)
-ZBUS_SUBSCRIBER_DEFINE(s3, 128);
-ZBUS_SUBSCRIBER_DEFINE(s4, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms3, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms4, 128);
+ZBUS_SUBSCRIBER_DEFINE(s3, 16);
+ZBUS_SUBSCRIBER_DEFINE(s4, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms3, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms4, 16);
 #if (CONFIG_BM_ONE_TO > 4LLU)
-ZBUS_SUBSCRIBER_DEFINE(s5, 128);
-ZBUS_SUBSCRIBER_DEFINE(s6, 128);
-ZBUS_SUBSCRIBER_DEFINE(s7, 128);
-ZBUS_SUBSCRIBER_DEFINE(s8, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms5, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms6, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms7, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms8, 128);
+ZBUS_SUBSCRIBER_DEFINE(s5, 16);
+ZBUS_SUBSCRIBER_DEFINE(s6, 16);
+ZBUS_SUBSCRIBER_DEFINE(s7, 16);
+ZBUS_SUBSCRIBER_DEFINE(s8, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms5, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms6, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms7, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms8, 16);
 #if (CONFIG_BM_ONE_TO > 8LLU)
-ZBUS_SUBSCRIBER_DEFINE(s9, 128);
-ZBUS_SUBSCRIBER_DEFINE(s10, 128);
-ZBUS_SUBSCRIBER_DEFINE(s11, 128);
-ZBUS_SUBSCRIBER_DEFINE(s12, 128);
-ZBUS_SUBSCRIBER_DEFINE(s13, 128);
-ZBUS_SUBSCRIBER_DEFINE(s14, 128);
-ZBUS_SUBSCRIBER_DEFINE(s15, 128);
-ZBUS_SUBSCRIBER_DEFINE(s16, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms9, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms10, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms11, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms12, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms13, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms14, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms15, 128);
-ZBUS_MSG_SUBSCRIBER_DEFINE(ms16, 128);
+ZBUS_SUBSCRIBER_DEFINE(s9, 16);
+ZBUS_SUBSCRIBER_DEFINE(s10, 16);
+ZBUS_SUBSCRIBER_DEFINE(s11, 16);
+ZBUS_SUBSCRIBER_DEFINE(s12, 16);
+ZBUS_SUBSCRIBER_DEFINE(s13, 16);
+ZBUS_SUBSCRIBER_DEFINE(s14, 16);
+ZBUS_SUBSCRIBER_DEFINE(s15, 16);
+ZBUS_SUBSCRIBER_DEFINE(s16, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms9, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms10, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms11, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms12, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms13, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms14, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms15, 16);
+ZBUS_MSG_SUBSCRIBER_DEFINE(ms16, 16);
 #endif
 #endif
 #endif
 #endif
 
 #define S_TASK(name)                                                                               \
-	void name##_task(void)                                                                     \
+	void name##_task(void *args)                                                                     \
 	{                                                                                          \
-		const struct zbus_channel *chan;                                                   \
-		struct bm_msg *msg_received;                                                       \
+		const struct zbus_channel *chan = NULL;                                                   \
+		struct bm_msg *msg_received = NULL;                                                       \
         while(1)																			\
 		{                                                                                           \
-			while (!zbus_sub_wait(&name, &chan, K_FOREVER)) {                                  \
+			while (!zbus_sub_wait(&name, &chan, 0)) {                                  \
 				zbus_chan_claim(chan, 0);                                          \
 																									\
 				msg_received = zbus_chan_msg(chan);                                        \
@@ -184,13 +189,13 @@ ZBUS_MSG_SUBSCRIBER_DEFINE(ms16, 128);
 	K_THREAD_DEFINE(name##_id, CONSUMER_STACK_SIZE, name##_task, 1);
 
 #define MS_TASK(name)                                                                               \
-	void name##_task(void)                                                                     \
+	void name##_task(void *args)                                                                     \
 	{                                                                                          \
-		const struct zbus_channel *chan;                                                   \
+		const struct zbus_channel *chan = NULL;                                                   \
 		struct bm_msg msg_received = {0};                                                       \
         while(1)																			\
 		{                                                                                           \
-			while (!zbus_sub_wait_msg(&name, &chan, &msg_received, K_FOREVER)) {                                  \
+			while (!zbus_sub_wait_msg(&name, &chan, &msg_received, 0)) {                                  \
 				if (&bm_channel != chan) {										\
 					printf("Wrong channel %p!\r\n", chan);\
 					continue;\
@@ -248,17 +253,25 @@ MS_TASK(ms16)
 static void s_cb(const struct zbus_channel *chan);
 
 ZBUS_LISTENER_DEFINE(s1, s_cb);
+ZBUS_LISTENER_DEFINE(ms1, s_cb);
 
 #if (CONFIG_BM_ONE_TO >= 2LLU)
 ZBUS_LISTENER_DEFINE(s2, s_cb);
+ZBUS_LISTENER_DEFINE(ms2, s_cb);
 #if (CONFIG_BM_ONE_TO > 2LLU)
 ZBUS_LISTENER_DEFINE(s3, s_cb);
 ZBUS_LISTENER_DEFINE(s4, s_cb);
+ZBUS_LISTENER_DEFINE(ms3, s_cb);
+ZBUS_LISTENER_DEFINE(ms4, s_cb);
 #if (CONFIG_BM_ONE_TO > 4LLU)
 ZBUS_LISTENER_DEFINE(s5, s_cb);
 ZBUS_LISTENER_DEFINE(s6, s_cb);
 ZBUS_LISTENER_DEFINE(s7, s_cb);
 ZBUS_LISTENER_DEFINE(s8, s_cb);
+ZBUS_LISTENER_DEFINE(ms5, s_cb);
+ZBUS_LISTENER_DEFINE(ms6, s_cb);
+ZBUS_LISTENER_DEFINE(ms7, s_cb);
+ZBUS_LISTENER_DEFINE(ms8, s_cb);
 #if (CONFIG_BM_ONE_TO > 8LLU)
 ZBUS_LISTENER_DEFINE(s9, s_cb);
 ZBUS_LISTENER_DEFINE(s10, s_cb);
@@ -268,6 +281,14 @@ ZBUS_LISTENER_DEFINE(s13, s_cb);
 ZBUS_LISTENER_DEFINE(s14, s_cb);
 ZBUS_LISTENER_DEFINE(s15, s_cb);
 ZBUS_LISTENER_DEFINE(s16, s_cb);
+ZBUS_LISTENER_DEFINE(ms9, s_cb);
+ZBUS_LISTENER_DEFINE(ms10, s_cb);
+ZBUS_LISTENER_DEFINE(ms11, s_cb);
+ZBUS_LISTENER_DEFINE(ms12, s_cb);
+ZBUS_LISTENER_DEFINE(ms13, s_cb);
+ZBUS_LISTENER_DEFINE(ms14, s_cb);
+ZBUS_LISTENER_DEFINE(ms15, s_cb);
+ZBUS_LISTENER_DEFINE(ms16, s_cb);
 #endif
 #endif
 #endif
@@ -285,7 +306,7 @@ static void s_cb(const struct zbus_channel *chan)
 
 #endif /* CONFIG_BM_ASYNC */
 
-static void producer_thread(void)
+static void producer_thread(void *args)
 {
 	printf("Benchmark 1 to %d: Dynamic memory, %sSYNC transmission and message size %u\r\n",
 		CONFIG_BM_ONE_TO, IS_ENABLED(CONFIG_BM_ASYNC) ? "A" : "", CONFIG_BM_MESSAGE_SIZE);
@@ -320,6 +341,7 @@ static void producer_thread(void)
 
 	count = 0;
 	printf("\r\n@%lu\r\n", duration);
+	sleep(3);
 }
 
 K_THREAD_DEFINE(producer_thread_id, PRODUCER_STACK_SIZE, producer_thread, 3);
@@ -371,8 +393,14 @@ void zbus_benchmark(void){
 	#endif
 	#endif
 	#endif
-	usleep(100);
 #ifdef CONFIG_ZBUS_POSIX
+	pthread_attr_t attr;
+	if (pthread_attr_init(&attr) != 0){
+		printf("pthread_attr_init() error");
+	}
+	if (pthread_attr_setstacksize(&attr, producer_thread_id.stack_size) != 0){
+		printf("pthread_attr_setstacksize() error");
+	}
 	if (pthread_create(&(producer_thread_id.thid), NULL, producer_thread_id.thread_entry, NULL) != 0) {
 		printf("pthread_create() error");
 	}

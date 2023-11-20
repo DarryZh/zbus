@@ -179,13 +179,14 @@ static inline int _zbus_vded_exec(const struct zbus_channel *chan, uint32_t end_
 	struct zbus_channel_observation_mask *observation_mask;
 
 	err = k_mutex_lock(chan->msg_buf_mutex, K_FOREVER);
-	uint8_t *buf = msg_buf_gen(zbus_chan_msg_size(chan));
-	if(buf == NULL)
-		return -1;
-
 	if (err) {
 		printf("[zbus] msg buf mutex lock fail\r\n");
 		return err;
+	}
+	uint8_t *buf = msg_buf_gen(zbus_chan_msg_size(chan));
+	if(buf == NULL){
+		k_mutex_unlock(chan->msg_buf_mutex);
+		return -1;
 	}
 	msg_buf_ref(buf);
 	msg_buf_set_chan(buf, &chan);
@@ -240,8 +241,8 @@ static inline int _zbus_vded_exec(const struct zbus_channel *chan, uint32_t end_
 
 	err = k_mutex_lock(chan->msg_buf_mutex, K_FOREVER);
 	if (err) {
-		printf("[zbus] msg buf mutex lock fail\r\n");
-		return err;
+	printf("[zbus] msg buf mutex lock fail\r\n");
+	return err;
 	}
 	msg_buf_unref(buf);
 	k_mutex_unlock(chan->msg_buf_mutex);
@@ -266,12 +267,10 @@ int zbus_chan_pub(const struct zbus_channel *chan, const void *msg, uint32_t tim
 	if (err) {
 		return err;
 	}
-
 	memcpy(chan->message, msg, chan->message_size);
+	k_mutex_unlock(&chan->data->mutex);
 
 	err = _zbus_vded_exec(chan, end_time);
-
-	k_mutex_unlock(&chan->data->mutex);
 
 	return err;
 }

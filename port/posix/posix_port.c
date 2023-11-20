@@ -134,11 +134,18 @@ void k_thread_init(struct k_thread *thread)
 {
     if(thread){
         if(thread->thid == 0){
-            if (pthread_create(&(thread->thid), NULL, thread->thread_entry, NULL) != 0) {
-                printf("pthread_create() error");
+            pthread_attr_t attr;
+            if (pthread_attr_init(&attr) != 0){
+                printf("pthread_attr_init() error\r\n");
+            }
+            if (pthread_attr_setstacksize(&attr, thread->stack_size) != 0){
+                printf("pthread_attr_setstacksize() error, thread->stack_size is %d\r\n", thread->stack_size);
+            }
+            if (pthread_create(&(thread->thid), &attr, thread->thread_entry, NULL) != 0) {
+                printf("pthread_create() error\r\n");
             }
             if (pthread_detach(thread->thid) != 0) {
-                printf("pthread_detach() error");
+                printf("pthread_detach() error\r\n");
             }
             return ;
         }
